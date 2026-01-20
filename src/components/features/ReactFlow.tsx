@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
     ReactFlow as BaseReactFlow,
     addEdge,
@@ -13,6 +13,10 @@ import {
     NodeToolbar,
 } from '@xyflow/react';
 import type { Node, Connection } from '@xyflow/react';
+import {
+    IconChevronRight,
+    IconChevronDown,
+} from '@tabler/icons-react';
 import '@xyflow/react/dist/style.css';
 import { initialNodesData, initialEdgesData } from '@/constants/lineageData';
 
@@ -37,7 +41,8 @@ const CustomNode = ({ data }: any) => {
 
             <div
                 style={data.style}
-                className="flex items-center justify-center relative rounded-lg shadow-md hover:brightness-110 transition-all duration-200 border-2 border-white/50"
+                className="flex items-center justify-center relative rounded-lg border-2 min-h-9"
+                onClick={() => data.onNodeClick && data.onNodeClick()}
             >
                 {data.targetPosition && (
                     <Handle
@@ -49,6 +54,21 @@ const CustomNode = ({ data }: any) => {
                 <div className="truncate px-2 w-[180px] text-center">
                     {data.label}
                 </div>
+                {data.hasChildren && (
+                    <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            data.onToggle();
+                        }}
+                        className="cursor-pointer p-2 rounded-md hover:bg-white/20 transition-all flex items-center justify-center shrink-0"
+                    >
+                        {data.isCollapsed ? (
+                            <IconChevronRight size={16} stroke={3} />
+                        ) : (
+                            <IconChevronDown size={16} stroke={3} />
+                        )}
+                    </div>
+                )}
                 {data.sourcePosition && (
                     <Handle
                         type="source"
@@ -68,10 +88,6 @@ const nodeTypes = {
 const edgeTypes = {};
 
 export function ReactFlowComponent() {
-    const [nodes, , onNodesChange] = useNodesState(initialNodesData);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdgesData);
-    const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
-
     // Build children map for collapse functionality
     const childrenMap = useMemo(() => {
         const map: Record<string, string[]> = {};
@@ -81,6 +97,108 @@ export function ReactFlowComponent() {
         });
         return map;
     }, []);
+
+    // Build parent map for path highlighting
+    const parentMap = useMemo(() => {
+       const map: Record<string, string[]> = {};
+
+  initialEdgesData.forEach(edge => {
+    if (!map[edge.target]) {
+      map[edge.target] = [];
+    }
+    map[edge.target].push(edge.source);
+  });
+
+  return map;
+    }, []);
+
+    const [nodes, , onNodesChange] = useNodesState(initialNodesData);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdgesData);
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+    // Initialize collapsedNodes with nodes at level 3 that have children
+    const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => {
+        const collapsed = new Set<string>();
+
+        // Find roots (nodes with no incoming edges in initialEdgesData)
+        const targetNodes = new Set(initialEdgesData.map(e => e.target));
+        const roots = initialNodesData.filter(n => !targetNodes.has(n.id));
+
+        const queue: { id: string, level: number }[] = roots.map(r => ({ id: r.id, level: 1 }));
+
+        while (queue.length > 0) {
+            const { id, level } = queue.shift()!;
+
+            if (level === 3) {
+                const children = childrenMap[id] || [];
+                if (children.length > 0) {
+                    collapsed.add(id);
+                }
+                continue;
+            }
+
+            const children = childrenMap[id] || [];
+            children.forEach(childId => {
+                queue.push({ id: childId, level: level + 1 });
+            });
+        }
+
+        return collapsed;
+    });
+
+    // Get path from root to a given node
+    const getPathToRoot = useCallback(  (nodeId: string, visited = new Set<string>()): string[][] => {
+    // Prevent infinite loops (cycle safety)
+    if (visited.has(nodeId)) return [];
+
+    const newVisited = new Set(visited);
+    newVisited.add(nodeId);
+
+    const parents = parentMap[nodeId];
+
+    // Root node (no parents)
+    if (!parents || parents.length === 0) {
+      return [[nodeId]];
+    }
+
+    // Collect all paths from all parents
+    const paths: string[][] = [];
+
+    parents.forEach(parentId => {
+      const parentPaths = getPathToRoot(parentId, newVisited);
+      parentPaths.forEach(path => {
+        paths.push([...path, nodeId]);
+      });
+    });
+
+    return paths;
+  },
+  [parentMap]);
+
+    // Get highlighted nodes and edges
+  const highlightedPath = useMemo(() => {
+  if (!selectedNodeId) {
+    return { nodes: new Set<string>(), edges: new Set<string>() };
+  }
+
+  const allPaths = getPathToRoot(selectedNodeId);
+
+  const nodesSet = new Set<string>();
+  const edgesSet = new Set<string>();
+
+  allPaths.forEach(path => {
+    path.forEach(nodeId => nodesSet.add(nodeId));
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const source = path[i];
+      const target = path[i + 1];
+      edgesSet.add(`${source}-${target}`);
+    }
+  });
+
+  return { nodes: nodesSet, edges: edgesSet };
+}, [selectedNodeId, getPathToRoot]);
+
 
     // Get all descendant nodes for a given node
     const getDescendants = useCallback((nodeId: string): string[] => {
@@ -114,21 +232,22 @@ export function ReactFlowComponent() {
         );
     }, [edges, visibleNodes]);
 
-    // Handle node click for collapse/expand
-    const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-        const hasChildren = childrenMap[node.id]?.length > 0;
-        if (hasChildren) {
-            setCollapsedNodes(prev => {
-                const newSet = new Set(prev);
-                if (newSet.has(node.id)) {
-                    newSet.delete(node.id);
-                } else {
-                    newSet.add(node.id);
-                }
-                return newSet;
-            });
-        }
-    }, [childrenMap]);
+    const toggleNode = useCallback((nodeId: string) => {
+        setCollapsedNodes(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(nodeId)) {
+                newSet.delete(nodeId);
+            } else {
+                newSet.add(nodeId);
+            }
+            return newSet;
+        });
+    }, []);
+
+    // Handle node click
+    const handleNodeClick = useCallback((nodeId: string) => {
+        setSelectedNodeId(prev => prev === nodeId ? null : nodeId);
+    }, []);
 
     // Handle connections (for future extensibility)
     const onConnect = useCallback(
@@ -136,54 +255,82 @@ export function ReactFlowComponent() {
         [setEdges]
     );
 
-    // Custom node styling based on collapse state
+    // Custom node styling based on collapse state and highlight
     const getNodeStyle = useCallback((node: Node) => {
-        const hasChildren = childrenMap[node.id]?.length > 0;
         const isCollapsed = collapsedNodes.has(node.id);
+        const isHighlighted = highlightedPath.nodes.has(node.id);
+        const shouldDull = selectedNodeId !== null && !isHighlighted;
+
+        let background = 'var(--brand-primary)';
+        
+        if (isCollapsed) {
+            background = '#ff9800';
+        }
 
         return {
-            background: isCollapsed ? '#ff9800' : 'var(--brand-primary)',
+            background,
             color: 'white',
             border: '2px solid #fff',
             borderRadius: '8px',
-            padding: '10px',
+            padding: '0px',
             fontSize: '14px',
             fontWeight: 'bold',
-            cursor: hasChildren ? 'pointer' : 'default',
-            minWidth: '120px',
+            minWidth: '200px',
             textAlign: 'center' as const,
+            cursor: 'pointer',
+            opacity: shouldDull ? 0.3 : 1,
+            transition: 'opacity 0.2s ease',
         };
-    }, [childrenMap, collapsedNodes]);
+    }, [collapsedNodes, highlightedPath.nodes, selectedNodeId]);
 
-    // Custom node label with collapse indicator
+    // Custom node label
     const getNodeLabel = useCallback((node: Node) => {
-        const hasChildren = childrenMap[node.id]?.length > 0;
-        const isCollapsed = collapsedNodes.has(node.id);
-        const arrow = hasChildren ? (isCollapsed ? ' ▶' : ' ▼') : '';
+        return node.data.label;
+    }, []);
 
-        return `${node.data.label}${arrow}`;
-    }, [childrenMap, collapsedNodes]);
+    // Custom edge styling for highlighted path
+    const styledEdges = useMemo(() => {
+        return visibleEdges.map(edge => {
+            const edgeId = `${edge.source}-${edge.target}`;
+            const isHighlighted = highlightedPath.edges.has(edgeId);
+            const shouldDull = selectedNodeId !== null && !isHighlighted;
+
+            return {
+                ...edge,
+                style: {
+                    stroke: '#b1b1b7',
+                    strokeWidth: 2,
+                    opacity: shouldDull ? 0.2 : 1,
+                    transition: 'opacity 0.2s ease',
+                },
+            };
+        });
+    }, [visibleEdges, highlightedPath.edges, selectedNodeId]);
 
     return (
         <BaseReactFlow
-            nodes={visibleNodes.map(node => ({
+            style={{ height: '100%', width: '100%' }}
+            nodes={(visibleNodes.map(node => ({
                 ...node,
                 type: 'custom',
                 data: {
                     ...node.data,
-                    fullLabel: node.data.label,
+                    fullLabel: (node.data as any).label,
                     label: getNodeLabel(node),
                     style: getNodeStyle(node),
                     sourcePosition: node.sourcePosition,
                     targetPosition: node.targetPosition,
+                    hasChildren: childrenMap[node.id]?.length > 0,
+                    isCollapsed: collapsedNodes.has(node.id),
+                    onToggle: () => toggleNode(node.id),
+                    onNodeClick: () => handleNodeClick(node.id),
                 },
                 style: {}, // Clear top-level style to avoid double styling
-            }))}
-            edges={visibleEdges}
+            })) as any[])}
+            edges={styledEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             nodesDraggable={false}

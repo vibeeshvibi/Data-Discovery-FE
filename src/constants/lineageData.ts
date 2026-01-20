@@ -1,5 +1,5 @@
-import {Position} from '@xyflow/react';
-import type { Edge} from '@xyflow/react';
+import { Position } from '@xyflow/react';
+import type { Edge } from '@xyflow/react';
 
 interface TreeNodeData extends Record<string, unknown> {
   label: string;
@@ -25,7 +25,7 @@ export const initialNodesData = [
     id: 'bdl_processed_hr_qa',
     type: 'default',
     position: { x: 250, y: -200 },
-    data: { label: 'bdl_processed_hr_qa.hr.rewardemployeegroup', hasChildren: true } as TreeNodeData,
+    data: { label: 'bdl_processed_hr_qa', hasChildren: true } as TreeNodeData,
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
   },
@@ -33,7 +33,7 @@ export const initialNodesData = [
     id: 'pds_hr_people_904394_dev',
     type: 'default',
     position: { x: 250, y: 200 },
-    data: { label: 'pds_hr_people_904394_dev.hr_reward.rewardemployeegroup_final', hasChildren: true } as TreeNodeData,
+    data: { label: 'pds_hr_people_904394_dev', hasChildren: true } as TreeNodeData,
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
   },
@@ -66,15 +66,15 @@ export const initialNodesData = [
   {
     id: 'standard_pack_schema',
     type: 'default',
-    position: { x: 500, y: 100 },
-    data: { label: 'pds_hr_people_904394_dev.standard_pack.exclusiongroupmapping_final', hasChildren: true } as TreeNodeData,
+    position: { x: 500, y: 150 },
+    data: { label: 'standard_pack', hasChildren: true } as TreeNodeData,
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
   },
   {
     id: 'hr_online_schema',
     type: 'default',
-    position: { x: 500, y: 300 },
+    position: { x: 500, y: 350 },
     data: { label: 'pds_hr_people_904394_dev.hr_online.functionhierarchy_final', hasChildren: true } as TreeNodeData,
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
@@ -107,22 +107,22 @@ export const initialNodesData = [
   {
     id: 'hrasnapupdatedelta',
     type: 'default',
-    position: { x: 750, y: 200 },
+    position: { x: 750, y: 150 },
     data: { label: 'bdl_processed_hr_qa.hr.hrasnapdatedelta' } as TreeNodeData,
     targetPosition: Position.Left,
   },
-   
+
   {
     id: 'positiondata_stage',
     type: 'default',
-    position: { x: 750, y: -100 },
+    position: { x: 750, y: -50 },
     data: { label: 'bdl_processed_hr_qa.staging.positiondata_stage' } as TreeNodeData,
     targetPosition: Position.Left,
   },
   {
     id: 'bdllandingphase3table',
     type: 'default',
-    position: { x: 750, y: 100 },
+    position: { x: 750, y: 50 },
     data: { label: 'bdl_processed_hr_qa.staging.bdllandingphase3table' } as TreeNodeData,
     targetPosition: Position.Left,
   },
@@ -136,7 +136,7 @@ export const initialNodesData = [
   {
     id: 'bdllandingphase1table',
     type: 'default',
-    position: { x: 750, y: 400 },
+    position: { x: 750, y: 350 },
     data: { label: 'bdl_processed_hr_qa.staging.bdllandingphase1table' } as TreeNodeData,
     targetPosition: Position.Left,
   },
@@ -144,35 +144,35 @@ export const initialNodesData = [
   {
     id: 'organizationunit',
     type: 'default',
-    position: { x: 750, y: 500 },
+    position: { x: 750, y: 450 },
     data: { label: 'bdl_processed_hr_qa.common.organizationunit' } as TreeNodeData,
     targetPosition: Position.Left,
   },
   {
     id: 'function',
     type: 'default',
-    position: { x: 750, y: 600 },
+    position: { x: 750, y: 550 },
     data: { label: 'bdl_processed_hr_qa.common.function' } as TreeNodeData,
     targetPosition: Position.Left,
   },
   {
     id: 'geography',
     type: 'default',
-    position: { x: 750, y: 700 },
+    position: { x: 750, y: 650 },
     data: { label: 'bdl_processed_hr_qa.common.geography' } as TreeNodeData,
     targetPosition: Position.Left,
   },
   {
     id: 'empexclusiongroup',
     type: 'default',
-    position: { x: 750, y: 800 },
+    position: { x: 750, y: 750 },
     data: { label: 'bdl_processed_hr_qa.common.empexclusiongroup' } as TreeNodeData,
     targetPosition: Position.Left,
   },
   {
     id: 'assignment',
     type: 'default',
-    position: { x: 750, y: 900 },
+    position: { x: 750, y: 850 },
     data: { label: 'bdl_processed_hr_qa.common.assignment' } as TreeNodeData,
     targetPosition: Position.Left,
   },
@@ -180,7 +180,7 @@ export const initialNodesData = [
   {
     id: 'exclusiongroupmapping_final',
     type: 'default',
-    position: { x: 750, y: 100 },
+    position: { x: 750, y: 200 },
     data: { label: 'pds_hr_people_904394_dev.standard_pack.exclusiongroupmapping_final' } as TreeNodeData,
     targetPosition: Position.Left,
   },
@@ -196,7 +196,7 @@ export const initialNodesData = [
     id: 'organizationunitehierarchy_final',
     type: 'default',
     position: { x: 750, y: 500 },
-    data: { label: 'sl_bdl_processed_hr_qa.common.vw_function', hasChildren: true } as TreeNodeData,
+    data: { label: 'sl_bdl_processed_hr_qa.common.vw_organizationunit_hierarchy', hasChildren: true } as TreeNodeData,
     sourcePosition: Position.Right,
     targetPosition: Position.Left,
   },
@@ -212,7 +212,7 @@ export const initialNodesData = [
     id: 'vw_organizationunit',
     type: 'default',
     position: { x: 1000, y: 400 },
-    data: { label: 'sl_bdl_processed_hr_qa.common.vw_function' } as TreeNodeData,
+    data: { label: 'sl_bdl_processed_hr_qa.common.vw_organizationunit' } as TreeNodeData,
     targetPosition: Position.Left,
   },
 ];
